@@ -84,7 +84,7 @@ def extract_post_id_from_url(url):
 
 def scrape_facebook_comments(url , output_file):
     post_id = extract_post_id_from_url(url)
-    access_token = 'EAABwzLixnjYBOxOw0a3GD0URyFmGB8J6pWANBqnagcxCZAAzeu2rJO3HvLZCodUD3OjrDijmhoxb99agp0Im6yxpzzWiFADJWXZBybuBphZAfwXy5ibc6RYjD98ol0slZAXwckwCdG7gS6AA5CXCZB4ZACQKpHiZCgXB892L6IAw6MVx6nYIZC00mfnq4WRnKFF8DxXgZD'  
+    access_token = 'xxxx'  
     comments = []
     url = f'https://graph.facebook.com/v17.0/{post_id}/comments?access_token={access_token}'
 
