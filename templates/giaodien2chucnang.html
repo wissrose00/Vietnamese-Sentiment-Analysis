@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Simple Flask App</title>
+    <!-- Bootstrap CSS -->
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+    />
+  </head>
+  <body>
+    <div class="container">
+
+
+     
+    
+
+
+      <h1 class="mb-4">Website phân tích cảm xúc</h1>
+      <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Lấy bình luận từ mạng xã hội</h5>
+            <form id="socialMediaForm">
+                <div class="mb-3">
+                    <label for="postUrl" class="form-label">URL của bài viết:</label>
+                    <input type="text" id="postUrl" name="postUrl" class="form-control" placeholder="Nhập URL">
+                </div>
+                <div class="mb-3">
+                    <label for="platform" class="form-label">Chọn nền tảng:</label>
+                    <select id="platform" name="platform" class="form-select">
+                        <option value="facebook">Facebook</option>
+                        <option value="youtube">Youtube</option>
+                        <option value="shopee">Shopee</option>
+                    </select>
+                </div>
+                <button type="button" onclick="scrapeComments()" class="btn btn-primary">Lấy bình luận</button>
+            </form>
+        </div>
+    </div>
+      <div class="card mb-4">
+        <div class="card-body">
+          <h5 class="card-title">Phân tích 1 câu</h5>
+          <form id="textForm">
+            <div class="mb-3">
+              <label for="text" class="form-label">Text:</label>
+              <textarea
+                id="text"
+                name="text"
+                rows="4"
+                class="form-control"
+              ></textarea>
+            </div>
+            <div class="mb-3">
+              <label for="modelText" class="form-label">Select Model:</label>
+              <select id="modelText" name="modelText" class="form-select">
+                <option value="logistic_regression">Logistic Regression</option>
+                <option value="svm">SVM</option>
+                <option value="naive_bayes">Naive Bayes</option>
+                <option value="nb_svm">Kết hợp</option>
+              </select>
+            </div>
+            <button
+              type="button"
+              onclick="analyzeText()"
+              class="btn btn-primary"
+            >
+              Phân tích
+            </button>
+          </form>
+
+          <div id="resultContainer" class="mt-4">
+            <h5>Kết quả:</h5>
+            <div id="resultText" class="alert alert-secondary" role="alert">
+              Kết quả phân tích sẽ được hiển thị ở đây
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-body">
+          <h5 class="card-title">Phân tích từ file CSV</h5>
+          <form id="csvForm">
+            <div class="mb-3">
+              <label for="inputFile" class="form-label">Chọn file CSV:</label>
+              <input
+                type="file"
+                id="inputFile"
+                name="inputFile"
+                accept=".csv"
+                class="form-control-file"
+              />
+            </div>
+            <div class="mb-3">
+              <label for="textColumn" class="form-label"
+                >Chọn cột văn bản:</label
+              >
+              <select
+                id="textColumn"
+                name="textColumn"
+                class="form-select"
+              ></select>
+            </div>
+            <div class="mb-3">
+              <label for="model" class="form-label">Chọn model:</label>
+              <select id="model" name="model" class="form-select">
+                <option value="logistic_regression">Logistic Regression</option>
+                <option value="svm">SVM</option>
+                <option value="naive_bayes">Naive Bayes</option>
+                <option value="nb_svm">Kết hợp</option>
+              </select>
+            </div>
+            <button
+              type="button"
+              onclick="analyzeCSV()"
+              class="btn btn-primary"
+            >
+              Phân tích
+            </button>
+          </form>
+        </div>
+      </div>
+      <div>
+        <img
+          id="modelImage"
+          src=""
+          alt="Model Visualization"
+          class="img-fluid"
+        />
+      </div>
+    </div>
+    <script>
+      function scrapeComments() {
+        const postUrl = document.getElementById('postUrl').value;
+        const platform = document.getElementById('platform').value;
+    
+        fetch('/scrape_comments', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                postUrl: postUrl,
+                platform: platform,
+            }),
+        })
+        .then(response => response.text()) // Đổi thành .text() để có thể chỉnh sửa
+        .then(text => {
+            // Thêm dòng "comment" vào đầu file
+            const csvWithComment = `comment,\n${text}`;
+            // Chuyển đổi lại thành Blob để có thể tải xuống
+            const blob = new Blob([csvWithComment], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = 'comments.csv'; // Đặt tên file
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+        });
+    }
+    
+      function analyzeText() {
+        // Lấy dữ liệu từ form
+        var text = document.getElementById("text").value;
+        var selectedModel = document.getElementById("modelText").value;
+
+        // Gửi yêu cầu POST với đoạn văn bản và mô hình đến ứng dụng Flask
+        fetch("/analyze", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ text: text, model: selectedModel }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            // Hiển thị kết quả lên giao diện
+            var resultElement = document.getElementById("resultText");
+            if (data.sentiment === "2") {
+              resultElement.innerText =
+                "Kết quả phân tích cảm xúc (" + selectedModel + "): Tích cực";
+            } else if (data.sentiment === "0") {
+              resultElement.innerText =
+                "Kết quả phân tích cảm xúc (" + selectedModel + "): Tiêu cực";
+            } else {
+              resultElement.innerText =
+                "Kết quả phân tích cảm xúc (" + selectedModel + "): Trung lập";
+            }
+          })
+          .catch((error) => {
+            console.error("Lỗi:", error);
+          });
+      }
+      function populateTextColumns() {
+        var inputFile = document.getElementById("inputFile");
+
+        if (inputFile.files.length > 0) {
+          var reader = new FileReader();
+
+          reader.onload = function (e) {
+            var text = e.target.result;
+            var lines = text.split("\n");
+            var header = lines[0].split(",");
+
+            var textColumnSelect = document.getElementById("textColumn");
+            textColumnSelect.innerHTML = "";
+
+            for (var i = 0; i < header.length; i++) {
+              var option = document.createElement("option");
+              option.value = header[i];
+              option.text = header[i];
+              textColumnSelect.add(option);
+            }
+          };
+
+          reader.readAsText(inputFile.files[0]);
+        }
+      }
+      function displayAlert(message) {
+        alert(message);
+      }
+
+      function analyzeCSV() {
+        var inputFile = document.getElementById("inputFile");
+        var inputFilePath =
+          inputFile.files.length > 0 ? inputFile.files[0].name : "";
+        var textColumn = document.getElementById("textColumn").value;
+        var model = document.getElementById("model").value;
+
+        fetch("/analyze_csv", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            input_file_path: inputFilePath,
+            text_column: textColumn,
+            model: model,
+          }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.status === "success") {
+              var jsonData = data.data;
+
+              // Hàm replacer để xử lý giá trị null
+              const replacer = (key, value) => (value === null ? "" : value);
+
+              // Lấy danh sách các trường từ hàng đầu tiên của dữ liệu
+              const header = Object.keys(jsonData[0]);
+
+              // Tạo chuỗi CSV
+              const csv = [
+                header.join(","), // Dòng tiêu đề đầu tiên
+                ...jsonData.map((row) =>
+                  header
+                    .map((fieldName) =>
+                      JSON.stringify(row[fieldName], replacer)
+                    )
+                    .join(",")
+                ),
+              ].join("\r\n");
+
+              var blob = new Blob([csv], { type: "text/csv" });
+
+              // Tạo một URL từ Blob
+              var url = window.URL.createObjectURL(blob);
+
+              // Tạo một thẻ <a> cho phép tải xuống CSV
+              var downloadLink = document.createElement("a");
+              downloadLink.href = url;
+              downloadLink.download = model + ".csv"; // Đặt tên tệp tải xuống
+              downloadLink.innerText = "Tải xuống dữ liệu CSV"; // Văn bản cho thẻ <a>
+              document.body.appendChild(downloadLink);
+              if (confirm("Bạn có muốn tải xuống dữ liệu CSV không?")) {
+                // Nếu người dùng đồng ý, kích hoạt sự kiện click để bắt đầu quá trình tải xuống
+                downloadLink.click();
+              } else {
+                // Nếu người dùng không đồng ý, loại bỏ thẻ <a> khỏi DOM
+                document.body.removeChild(downloadLink);
+              }
+              updateImage();
+            } else {
+              displayAlert("Error: " + data.message); // Sửa thành displayAlert
+            }
+          })
+          .catch((error) => {
+            displayAlert("Error: " + error.message); // Sửa thành displayAlert
+          });
+      }
+      // Gọi hàm populateTextColumns khi có thay đổi trong file input
+      document
+        .getElementById("inputFile")
+        .addEventListener("change", populateTextColumns);
+    </script>
+    <script>
+      function updateImage() {
+        var model = document.getElementById("model").value;
+        var imagePath = model + ".png";
+        document.getElementById("modelImage").src =
+          "{{ url_for('static', filename='') }}" + imagePath;
+      }
+    </script>
+  </body>
+</html>
